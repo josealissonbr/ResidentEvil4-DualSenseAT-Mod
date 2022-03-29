@@ -22,6 +22,8 @@ namespace ETS2_DualSenseAT_Mod
 
         static UdpClient client;
         static IPEndPoint endPoint;
+
+        static bool Server_Initialized = false; 
         static bool Connect()
         {
             try
@@ -29,15 +31,19 @@ namespace ETS2_DualSenseAT_Mod
                 client = new UdpClient();
                 var portNumber = File.ReadAllText(@"C:\Temp\DualSenseX\DualSenseX_PortNumber.txt");
                 endPoint = new IPEndPoint(Triggers.localhost, Convert.ToInt32(portNumber));
+                Server_Initialized = true;
                 return true;
             }catch(Exception ex)
             {
+                Server_Initialized = false;
                 return false;
             }
         }
 
         static void Send(Packet data)
         {
+            if (!Server_Initialized)
+                return;
             var RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
             client.Send(RequestData, RequestData.Length, endPoint);
         }
@@ -51,28 +57,23 @@ namespace ETS2_DualSenseAT_Mod
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //Process[] pname = Process.GetProcessesByName("eurotrucks2");
-            //if (pname.Length == 0)
-            //{
-            //    MessageBox.Show("Euro Truck Simulator 2 is not running, please open game first!", "DualSense AT Mod");
-            //    Application.Exit();
-            //}
-
-            //if (!File.Exists(Application.StartupPath + "\\DualSenseX_CommandLineArgs.bat"))
-            //{
-            //    MessageBox.Show("DualSenseX Command Line not found.", "DualSense AT Mod");
-            //    Application.Exit();
-            //}
+            Process[] pname = Process.GetProcessesByName("bio4");
+            if (pname.Length == 0)
+            {
+                MessageBox.Show("Resident Evil 4 isn't running, please open game first!", "DualSense AT Mod");
+                Application.Exit();
+            }
 
             if (!Connect())
             {
                 MessageBox.Show("Failed to connect to the DSX UDP Server ("+ Triggers.localhost, Convert.ToInt32(File.ReadAllText(@"C:\Temp\DualSenseX\DualSenseX_PortNumber.txt")) + ")");
+                Application.Exit();
             }
 
 
             timer1.Enabled = true;
-            //Call static triggers values;
-            gameStaticTriggerValues();
+            
+           // gameStaticTriggerValues();
         }
 
         static int iStep = 0;
@@ -166,6 +167,7 @@ namespace ETS2_DualSenseAT_Mod
                 Send(p);
 
                 timer1.Enabled = false;
+                gameStaticTriggerValues();
             }
 
         }
@@ -179,10 +181,10 @@ namespace ETS2_DualSenseAT_Mod
             p.instructions = new Instruction[4];
 
             p.instructions[0].type = InstructionType.TriggerUpdate;
-            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.Rigid, 50,76,93,125,150,174,199 }; //(50)(76)(93)(125)(150)(174)(199)
+            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibratePulseAB, 61, 255, 255, 5, 67, 119, 0 };
 
             p.instructions[1].type = InstructionType.TriggerUpdate;
-            p.instructions[1].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.Rigid, 50, 76, 93, 125, 150, 174, 199 }; //(50)(76)(93)(125)(150)(174)(199)
+            p.instructions[1].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Bow, 0, 1, 8, 8};
 
             Send(p);
 
